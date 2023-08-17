@@ -2,6 +2,7 @@ package com.example.foodappcompose
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -28,6 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -41,15 +43,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.NavHost
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.foodappcompose.entity.Yemekler
 import com.example.foodappcompose.ui.theme.FoodAppComposeTheme
+import com.example.foodappcompose.viewmodel.AnaSayfaViewModel
+import com.example.foodappcompose.viewmodel.AnasayfaViewModelFactory
 import com.google.gson.Gson
 
 class MainActivity : ComponentActivity() {
@@ -70,27 +74,16 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "DiscouragedApi")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Anasayfa(navController: NavHostController) {
-    val yemekListesi = remember { mutableStateListOf<Yemekler>() }
+    val context = LocalContext.current
+    val viewModel: AnaSayfaViewModel = viewModel(
+        factory = AnasayfaViewModelFactory(context.applicationContext as Application)
+    )
+    val yemekListesi = viewModel.yemeklerListesi.observeAsState(listOf())
 
-    LaunchedEffect(key1 = true) {
-        val y1 = Yemekler(1, "Kofte", "kofte", 15)
-        val y2 = Yemekler(2, "Ayran", "ayran", 2)
-        val y3 = Yemekler(3, "Fanta", "fanta", 3)
-        val y4 = Yemekler(4, "Makarna", "makarna", 14)
-        val y5 = Yemekler(5, "Kadayif", "kadayif", 8)
-        val y6 = Yemekler(6, "Baklava", "baklava", 15)
-
-        yemekListesi.add(y1)
-        yemekListesi.add(y2)
-        yemekListesi.add(y3)
-        yemekListesi.add(y4)
-        yemekListesi.add(y5)
-        yemekListesi.add(y6)
-    }
 
     Scaffold(
         topBar = {
@@ -105,9 +98,9 @@ fun Anasayfa(navController: NavHostController) {
         content = {
             LazyColumn {
                 items(
-                    count = yemekListesi.count(),
+                    count = yemekListesi.value!!.count(),
                     itemContent = {
-                        val yemek = yemekListesi[it]
+                        val yemek = yemekListesi.value!![it]
                         Card(
                             modifier = Modifier
                                 .padding(all = 5.dp)
@@ -189,7 +182,7 @@ fun SayfaGecisleri() {
             navArgument("yemek"){type = NavType.StringType}
         )) {
             val json = it.arguments?.getString("yemek")
-            val yemek = Gson().fromJson(json,Yemekler::class.java)
+            val yemek = Gson().fromJson(json, Yemekler::class.java)
             DetaySayfa(yemek = yemek)
         }
     }
